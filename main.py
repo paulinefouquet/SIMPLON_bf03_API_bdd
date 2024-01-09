@@ -15,14 +15,14 @@ def apply_request (request) :
     cur.execute(request)    
     result = cur.fetchall()  # Récupère les résultats de la requête
     if result is None or len(result)==0:
-        return  HTTPException(status_code=400, detail="J'ai rien trouvé")
+        return  HTTPException(status_code=400, detail="Aucune valeur trouvée, merci de vérifier les paramètres entrés, attention à la casse")
     elif len(result)==1 : 
         return result[0][0]
     else: return result
         #return {r[2]: r[0] for r in result}
 
 
-#us1
+#us1 En tant qu'Agent je veux pouvoir consulter le revenu fiscal moyen des foyers de ma ville (Montpellier)
 
 @app.get("/revenu_fiscal_moyen/")
 async def revenu_fiscal_moyen(year: str, city: str ):
@@ -32,8 +32,7 @@ async def revenu_fiscal_moyen(year: str, city: str ):
 
 
 
-
-#us2: En tant qu'Agent je veux consulter les 10 dernières transactions dans ma ville (Lyon) ok
+#us2: En tant qu'Agent je veux consulter les 10 dernières transactions dans ma ville (Lyon)
 
 @app.get("/transactions/last")
 async def last_transactions(city: str, limit: int):
@@ -87,10 +86,10 @@ async def repartition(city: str, year: str):
 #us7: En tant qu'Agent je souhaite connaitre le prix au m2 moyen pour les maisons vendues à Avignon l'année 2022*/  
 
 @app.get("/transactions/prix-moyen-maison")
-async def prix_moy(city: str, year: str):
+async def prix_moy(city: str, year: str, type_batiment):
     year = validate_year(year)
     req=f"SELECT AVG(prix /surface_habitable) FROM transactions\
-    WHERE ville LIKE '%AVIGNON%' AND date_transaction LIKE '%2022%' AND type_batiment = 'Maison';"
+    WHERE ville LIKE '%{city}%' AND date_transaction LIKE '%{year}%' AND type_batiment = '{type_batiment}';"
 
     answer=apply_request(req)
 
@@ -99,14 +98,16 @@ async def prix_moy(city: str, year: str):
 #us8: En tant que CEO, je veux consulter le nombre de transactions (tout type confondu) par département, ordonnées par ordre décroissant*/
 
 @app.get("/transactions/departement")
-async def department(city: str, year: str):
-    year = validate_year(year)
+async def topdepartment():
+    #year = validate_year(year)
     req=f"SELECT departement, COUNT(*) AS nb FROM transactions GROUP BY departement ORDER BY nb DESC;"
 
     answer=apply_request(req)
 
     return answer
 
+
+#us9:En tant que CEO je souhaite connaitre le nombre total de vente d'appartements en 2022 dans toutes les villes où le revenu fiscal moyen en 2018 est supérieur à 70k
 
 @app.get("/transactions/prix-moyen")
 async def repartition(city: str, year: str):

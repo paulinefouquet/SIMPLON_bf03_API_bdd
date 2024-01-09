@@ -2,7 +2,7 @@
 
 ## Brief projet dans le cadre de developement d'app immo
 
-Création d'une API REST pour exposer les données de la BDD
+Création d'une API REST pour exposer les données de la BDD immo
 
 ## Documentation
 
@@ -20,3 +20,8 @@ uvicorn main:app --reload
 
 - sqlite3 
     pour se connecter à la BDD
+
+    
+## Structure :
+main.py est le code principal de l'API
+dans loadnpz.py on trouve le code qui nous a permit de doxwload le fichier transactions.npz et de le transférer en csv
