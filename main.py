@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 import sqlite3
 
 app = FastAPI()
+
 con = sqlite3.connect(r"C:\Users\Utilisateur\AppData\Roaming\DBeaverData\workspace6\.metadata\sample-database-sqlite-1\Chinook.db")
 
 def validate_year(year: str):
@@ -24,135 +25,120 @@ def apply_request (request) :
 
 #us1 En tant qu'Agent je veux pouvoir consulter le revenu fiscal moyen des foyers de ma ville (Montpellier)
 
-@app.get("/revenu_fiscal_moyen/")
-async def revenu_fiscal_moyen(year: str, city: str ):
-    year = validate_year(year)
-    req = f"SELECT revenu_fiscal_moyen, date, ville FROM foyers_fiscaux WHERE date LIKE '%{year}%' AND ville = '{city}'"
+@app.get("/revenu_fiscal_moyen/", description = 'Retourne le revenu fiscal moyen des foyers d\'une ville donnée')
+async def revenu_fiscal_moyen(city: str, year: str=""):
+    req = f"SELECT revenu_fiscal_moyen, date, ville FROM foyers_fiscaux WHERE ville = '{city}'"
+    if year != "":
+        year = validate_year(year)
+        req += f"AND date LIKE '%{year}%'"
     return apply_request(req)
-
-
+       
 
 #us2: En tant qu'Agent je veux consulter les 10 dernières transactions dans ma ville (Lyon)
 
-@app.get("/transactions/last")
+@app.get("/transactions/last", description = 'Retourne les n dernières transactions d\'une ville donnée')
 async def last_transactions(city: str, limit: int):
     req= f"SELECT * FROM transactions t WHERE ville LIKE '%{city}%' ORDER BY date_transaction DESC LIMIT {limit};"
     return apply_request(req)
 
+
 #us3: En tant qu'Agent je souhaite connaitre le nombre d'acquisitions dans ma ville (Paris) durant l'année 2022
-
-@app.get("/transactions/count")
-async def count_transactions(city: str, year: str):
-    year = validate_year(year)
-    req= f"SELECT COUNT(id_transaction) FROM transactions t WHERE ville LIKE '%{city}%' AND date_transaction LIKE '%{year}%';"
-    return apply_request(req)
-     
-
-#us4: En tant qu'Agent je souhaite connaitre le prix au m2 moyen pour les maisons vendues l'année 2022
-
-@app.get("/transactions/prix-moyen")
-async def avg_price(year, type_batiment: str):
-    year = validate_year(year)
-    req=  f"SELECT AVG(prix / surface_habitable) FROM transactions WHERE date_transaction LIKE '%{year}%'\
-    AND type_batiment LIKE '{type_batiment}';"
-    answer=apply_request(req)
-
-    return answer
-
 #us5: En tant qu'Agent je souhaite connaitre le nombre d'acquisitions de studios dans ma ville (Rennes) durant l'année 2022
 
-@app.get("/transactions/count-studio")
-async def count_studio(city: str, year, nb_piece: int):
+@app.get("/transactions/count", description = 'Us3 et us5 : Retourne le nombre d\'acquisitions selon le type de bâtiment (optionnel us5)\
+          dans une ville donnée durant l\'année donnée')
+async def count(city: str, year, nb_piece: str =""):
     year = validate_year(year)
-    req= f"SELECT COUNT(*) FROM transactions t WHERE ville LIKE '%{city}%' AND date_transaction LIKE '%{year}%'\
-    AND n_pieces = {nb_piece};"
+    req= f"SELECT COUNT(*) FROM transactions t WHERE ville LIKE '%{city}%' AND date_transaction LIKE '%{year}%'"
+    if nb_piece != "":
+        req+= f"AND n_pieces = {nb_piece};"
     answer=apply_request(req)
-
     return answer
-    
+
+
+#us4: En tant qu'Agent je souhaite connaitre le prix au m2 moyen pour les maisons vendues l'année 2022
+#us7: En tant qu'Agent je souhaite connaitre le prix au m2 moyen pour les maisons vendues à Avignon l'année 2022
+
+@app.get("/transactions/prix-moyen", description= 'US7 : Retourne le prix moyen au m2 en fonction des villes,\
+          du type de batiment (optionnel) et de l\'année ')
+async def prix_moy(type_batiment, year: str, city: str=""):
+    year = validate_year(year)
+    req=f"SELECT AVG(prix /surface_habitable) FROM transactions WHERE date_transaction LIKE '%{year}%' AND type_batiment = '{type_batiment}'"
+    if city != "":
+        req += "AND ville LIKE '%{city}%';"
+    answer=apply_request(req)
+    return answer
+   
 
 #us6: En tant qu'Agent je souhaite connaitre la répartition des appartements vendus (à Marseille) durant l'année 2022 en fonction du nombre de pièces
 
-@app.get("/transactions/repartition")
+@app.get("/transactions/repartition", description= 'US6 : Retourne la répartition des biens vendus \
+         dans une ville données pour un type de batiment donnée durant l\'année 2022 en fonction du nombre de pièces')
 async def repartition(city: str, year: str):
     year = validate_year(year)
     req=  f"SELECT n_pieces, count(*) FROM transactions WHERE ville LIKE '%{city}%' AND \
     date_transaction LIKE '%{year}%' GROUP BY n_pieces;"
-
     answer=apply_request(req)
-
     return answer
 
-#us7: En tant qu'Agent je souhaite connaitre le prix au m2 moyen pour les maisons vendues à Avignon l'année 2022*/  
 
-@app.get("/transactions/prix-moyen-maison")
-async def prix_moy(city: str, year: str, type_batiment):
-    year = validate_year(year)
-    req=f"SELECT AVG(prix /surface_habitable) FROM transactions\
-    WHERE ville LIKE '%{city}%' AND date_transaction LIKE '%{year}%' AND type_batiment = '{type_batiment}';"
+#us8: En tant que CEO, je veux consulter le nombre de transactions (tout type confondu) par département, ordonnées par ordre décroissant
 
+@app.get("/transactions/departement", description= 'Retourne le nombre de transactions (tout type confondu) par département,\
+          ordonnées par ordre décroissant')
+async def topdepartment(year: str = ''):
+    if year == '':
+        req=f"SELECT departement, COUNT(*) AS nb FROM transactions GROUP BY departement ORDER BY nb DESC;"
+    else :
+        req=f"SELECT departement, COUNT(*) AS nb FROM transactions WHERE date_transaction LIKE '%{year}%' \
+            GROUP BY departement ORDER BY nb DESC;"
     answer=apply_request(req)
-
-    return answer
-
-#us8: En tant que CEO, je veux consulter le nombre de transactions (tout type confondu) par département, ordonnées par ordre décroissant*/
-
-@app.get("/transactions/departement")
-async def topdepartment():
-    #year = validate_year(year)
-    req=f"SELECT departement, COUNT(*) AS nb FROM transactions GROUP BY departement ORDER BY nb DESC;"
-
-    answer=apply_request(req)
-
     return answer
 
 
 #us9:En tant que CEO je souhaite connaitre le nombre total de vente d'appartements en 2022 dans toutes les villes où le revenu fiscal moyen en 2018 est supérieur à 70k
 
-@app.get("/transactions/prix-moyen")
-async def repartition(city: str, year: str):
+@app.get("/transactions/immo-fonction-revenu-fiscal", description= 'Us09 :Retourne le nombre total de vente d\
+         \'un type de batiment (appartements ou maison) pour une année donnée dans \
+         toutes les villes où le revenu fiscal moyen pour une année fiscale de référence donnée est supérieur à revenu fiscal donné')
+async def total_vente_selon_parametre(type_batiment, year: str, fiscal_year: str, revenu_fiscal_moyen: int):
     year = validate_year(year)
+    fiscal_year = validate_year(fiscal_year)
     req=f"SELECT t.ville, COUNT(t.id_transaction) AS n_total FROM transactions t\
         JOIN foyers_fiscaux ff ON t.ville = UPPER(ff.ville) \
-        WHERE t.date_transaction like '2022%' AND ff.revenu_fiscal_moyen > 70000 AND ff.date = 2018\
-        GROUP BY t.ville;"
-
+        WHERE t.date_transaction LIKE '{year}%' AND type_batiment = '{type_batiment}' AND ff.revenu_fiscal_moyen > {revenu_fiscal_moyen} AND ff.date LIKE '%{fiscal_year}%'\
+        GROUP BY t.ville ORDER BY n_total DESC;"
     answer=apply_request(req)
 
     return answer
 
 
-@app.get("/transactions/prix-moyen")
-async def repartition(city: str, year: str):
-    year = validate_year(year)
-    req=f"SELECT ville, COUNT(id_transaction) AS n_transac  FROM transactions GROUP BY ville\
-        ORDER BY n_transac DESC LIMIT 10 ; "
+# Us10 : En tant que CEO, je veux consulter le top 10 des villes les plus dynamiques en termes de transactions immobilières */ 
 
+@app.get("/transactions/dynamisme", description= 'Us10 Retourne le top 10 des villes les plus dynamiques\
+          en termes de transactions immobilières')
+async def dynamisme(limit_top, year: str =""):
+    if year == "":
+        req=f"SELECT ville, COUNT(id_transaction) AS n_transac FROM transactions GROUP BY ville\
+        ORDER BY n_transac DESC LIMIT {limit_top} ; "   
+    else: 
+        year = validate_year(year)
+        req=f"SELECT ville, COUNT(id_transaction) AS n_transac FROM transactions\
+        WHERE date_transaction LIKE '%{year}%' GROUP BY ville\
+        ORDER BY n_transac DESC LIMIT {limit_top} ; "
     answer=apply_request(req)
-
     return answer
 
 
-@app.get("/transactions/prix-moyen/appartement")
-async def repartition(city: str, year: str):
-    year = validate_year(year)
+# us11 : En tant que CEO, je veux accéder aux 10 villes avec un prix au m2 moyen le plus bas pour les appartements 
+# us12 : En tant que CEO, je veux accéder aux 10 villes avec un prix au m2 moyen le plus haut pour les maisons 
+
+@app.get("/transactions/prix-moyen/top", description= 'Us11 ou US12 : Retourne le top + ou - des prix au m2\
+          des Maisons ou Appartements')
+async def top_prix_par_batiment(type_batiment, ascendant: bool, limit_top):
+    if ascendant : order = 'ASC'
+    else : order = 'DESC'
     req=f"SELECT ville, type_batiment, AVG(ROUND(prix/surface_habitable)) as prix_m2_moy FROM transactions\
-        WHERE type_batiment = 'Appartement' GROUP BY ville  ORDER BY prix_m2_moy ASC LIMIT 10"
-
+        WHERE type_batiment = '{type_batiment}' GROUP BY ville  ORDER BY prix_m2_moy {order} LIMIT {limit_top}"
     answer=apply_request(req)
-
     return answer
-
-
-@app.get("/transactions/prix-moyen/maison")
-async def repartition(city: str, year: str):
-    year = validate_year(year)
-    req=f"SELECT ville, type_batiment, AVG(ROUND(prix/surface_habitable)) as prix_m2_moy FROM transactions\
-            WHERE type_batiment = 'Maison' GROUP BY ville ORDER BY prix_m2_moy DESC LIMIT 10"
-
-    answer=apply_request(req)
-
-    return answer
-
-
-
