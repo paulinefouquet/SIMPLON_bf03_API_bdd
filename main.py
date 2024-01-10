@@ -84,10 +84,10 @@ async def repartition(type_batiment, city: str, year: str):
 @app.get("/transactions/departement", description= 'US8: Retourne le nombre de transactions (tout type confondu) par département,\
           ordonnées par ordre décroissant')
 async def topdepartment(year: str = ''):
-    year = validate_year(year)
     if year == '':
         req=f"SELECT departement, COUNT(*) AS nb FROM transactions GROUP BY departement ORDER BY nb DESC;"
     else :
+        year = validate_year(year)
         req=f"SELECT departement, COUNT(*) AS nb FROM transactions WHERE date_transaction LIKE '{year}%' \
             GROUP BY departement ORDER BY nb DESC;"
     answer=apply_request(req)
