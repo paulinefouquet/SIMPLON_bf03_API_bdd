@@ -4,7 +4,7 @@
 
 Création d'une API REST pour exposer les données de la BDD immo
 
-## Documentation
+## Prérequis
 
 Besoin des packages et dépendences suivantes
 

@@ -52,45 +52,43 @@ async def count(city: str, year, nb_piece: str =""):
     req= f"SELECT COUNT(*) FROM transactions t WHERE ville LIKE '%{city}%' AND date_transaction LIKE '%{year}%'"
     if nb_piece != "":
         req+= f"AND n_pieces = {nb_piece};"
-    answer=apply_request(req)
-    return answer
+    return apply_request(req)
 
 
 #us4: En tant qu'Agent je souhaite connaitre le prix au m2 moyen pour les maisons vendues l'année 2022
 #us7: En tant qu'Agent je souhaite connaitre le prix au m2 moyen pour les maisons vendues à Avignon l'année 2022
 
-@app.get("/transactions/prix-moyen", description= 'US7 : Retourne le prix moyen au m2 en fonction des villes,\
-          du type de batiment (optionnel) et de l\'année ')
+@app.get("/transactions/prix-moyen", description= 'US4 et US7 : Retourne le prix moyen au m2 en fonction des villes (optionnel),\
+          du type de batiment et de l\'année ')
 async def prix_moy(type_batiment, year: str, city: str=""):
     year = validate_year(year)
     req=f"SELECT AVG(prix /surface_habitable) FROM transactions WHERE date_transaction LIKE '%{year}%' AND type_batiment = '{type_batiment}'"
     if city != "":
-        req += "AND ville LIKE '%{city}%';"
-    answer=apply_request(req)
-    return answer
+        req += f" AND ville LIKE '{city}%';"
+    return apply_request(req)
    
 
 #us6: En tant qu'Agent je souhaite connaitre la répartition des appartements vendus (à Marseille) durant l'année 2022 en fonction du nombre de pièces
 
 @app.get("/transactions/repartition", description= 'US6 : Retourne la répartition des biens vendus \
          dans une ville données pour un type de batiment donnée durant l\'année 2022 en fonction du nombre de pièces')
-async def repartition(city: str, year: str):
+async def repartition(type_batiment, city: str, year: str):
     year = validate_year(year)
-    req=  f"SELECT n_pieces, count(*) FROM transactions WHERE ville LIKE '%{city}%' AND \
+    req=  f"SELECT n_pieces, count(*) FROM transactions WHERE ville LIKE '%{city}%' AND type_batiment = '{type_batiment}' AND \
     date_transaction LIKE '%{year}%' GROUP BY n_pieces;"
-    answer=apply_request(req)
-    return answer
+    return apply_request(req)
 
 
 #us8: En tant que CEO, je veux consulter le nombre de transactions (tout type confondu) par département, ordonnées par ordre décroissant
 
-@app.get("/transactions/departement", description= 'Retourne le nombre de transactions (tout type confondu) par département,\
+@app.get("/transactions/departement", description= 'US8: Retourne le nombre de transactions (tout type confondu) par département,\
           ordonnées par ordre décroissant')
 async def topdepartment(year: str = ''):
+    year = validate_year(year)
     if year == '':
         req=f"SELECT departement, COUNT(*) AS nb FROM transactions GROUP BY departement ORDER BY nb DESC;"
     else :
-        req=f"SELECT departement, COUNT(*) AS nb FROM transactions WHERE date_transaction LIKE '%{year}%' \
+        req=f"SELECT departement, COUNT(*) AS nb FROM transactions WHERE date_transaction LIKE '{year}%' \
             GROUP BY departement ORDER BY nb DESC;"
     answer=apply_request(req)
     return answer
