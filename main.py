@@ -27,7 +27,7 @@ def apply_request (request) :
 
 @app.get("/revenu_fiscal_moyen/", description = 'Retourne le revenu fiscal moyen des foyers d\'une ville donnée')
 async def revenu_fiscal_moyen(city: str, year: str=""):
-    req = f"SELECT revenu_fiscal_moyen, date, ville FROM foyers_fiscaux WHERE ville = '{city}'"
+    req = f"SELECT revenu_fiscal_moyen, date, ville FROM foyers_fiscaux WHERE ville LIKE '{city}%'"
     if year != "":
         year = validate_year(year)
         req += f"AND date LIKE '%{year}%'"
