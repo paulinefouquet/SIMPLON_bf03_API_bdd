@@ -1,9 +1,14 @@
 from fastapi import FastAPI, HTTPException
 import sqlite3
+import Enum from enum
 
 app = FastAPI()
 
 con = sqlite3.connect(r"C:\Users\Utilisateur\AppData\Roaming\DBeaverData\workspace6\.metadata\sample-database-sqlite-1\Chinook.db")
+
+class TypeBatiment(Enum) :
+    MAISON = "Maison"
+    APPARTEMENT = "Appartement"
 
 def validate_year(year: str):
     if not year.isdigit() or not (len(year) == 4) :
@@ -60,7 +65,7 @@ async def count(city: str, year, nb_piece: str =""):
 
 @app.get("/transactions/prix-moyen", description= 'US4 et US7 : Retourne le prix moyen au m2 en fonction des villes (optionnel),\
           du type de batiment et de l\'année ')
-async def prix_moy(type_batiment, year: str, city: str=""):
+async def prix_moy(type_batiment : TypeBatiment, year: str, city: str=""):
     year = validate_year(year)
     req=f"SELECT AVG(prix /surface_habitable) FROM transactions WHERE date_transaction LIKE '%{year}%' AND type_batiment = '{type_batiment}'"
     if city != "":
@@ -72,7 +77,7 @@ async def prix_moy(type_batiment, year: str, city: str=""):
 
 @app.get("/transactions/repartition", description= 'US6 : Retourne la répartition des biens vendus \
          dans une ville données pour un type de batiment donnée durant l\'année 2022 en fonction du nombre de pièces')
-async def repartition(type_batiment, city: str, year: str):
+async def repartition(type_batiment : TypeBatiment, city: str, year: str):
     year = validate_year(year)
     req=  f"SELECT n_pieces, count(*) FROM transactions WHERE ville LIKE '%{city}%' AND type_batiment = '{type_batiment}' AND \
     date_transaction LIKE '%{year}%' GROUP BY n_pieces;"
@@ -99,7 +104,7 @@ async def topdepartment(year: str = ''):
 @app.get("/transactions/immo-fonction-revenu-fiscal", description= 'Us09 :Retourne le nombre total de vente d\
          \'un type de batiment (appartements ou maison) pour une année donnée dans \
          toutes les villes où le revenu fiscal moyen pour une année fiscale de référence donnée est supérieur à revenu fiscal donné')
-async def total_vente_selon_parametre(type_batiment, year: str, fiscal_year: str, revenu_fiscal_moyen: int):
+async def total_vente_selon_parametre(type_batiment : TypeBatiment, year: str, fiscal_year: str, revenu_fiscal_moyen: int):
     year = validate_year(year)
     fiscal_year = validate_year(fiscal_year)
     req=f"SELECT t.ville, COUNT(t.id_transaction) AS n_total FROM transactions t\
@@ -133,7 +138,7 @@ async def dynamisme(limit_top, year: str =""):
 
 @app.get("/transactions/prix-moyen/top", description= 'Us11 ou US12 : Retourne le top + ou - des prix au m2\
           des Maisons ou Appartements')
-async def top_prix_par_batiment(type_batiment, ascendant: bool, limit_top):
+async def top_prix_par_batiment(type_batiment : TypeBatiment, ascendant: bool, limit_top):
     if ascendant : order = 'ASC'
     else : order = 'DESC'
     req=f"SELECT ville, type_batiment, AVG(ROUND(prix/surface_habitable)) as prix_m2_moy FROM transactions\

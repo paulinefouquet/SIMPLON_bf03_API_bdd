@@ -9,7 +9,6 @@ Version python 3.11.5
 
 ## Datas :
 Il faut télécharger les données sources depuis https://www.kaggle.com/datasets/benoitfavier/immobilier-france
-Intégrer ses données dans un DB
 Important, le fichier transactions.npz necessite d'être transformer en csv pour être intégrer à une DB, cf Prérequis
 Attention le chemin d'accès vers la DB doit être spécifié con = sqlite3.connect(r"Chemin d'accès à la DB")
 
