@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 import sqlite3
-import Enum from enum
+from enum import Enum
 
 app = FastAPI()
 
@@ -65,9 +65,9 @@ async def count(city: str, year, nb_piece: str =""):
 
 @app.get("/transactions/prix-moyen", description= 'US4 et US7 : Retourne le prix moyen au m2 en fonction des villes (optionnel),\
           du type de batiment et de l\'année ')
-async def prix_moy(type_batiment : TypeBatiment, year: str, city: str=""):
+async def prix_moy(type_batiment: TypeBatiment, year: str, city: str=""):
     year = validate_year(year)
-    req=f"SELECT AVG(prix /surface_habitable) FROM transactions WHERE date_transaction LIKE '%{year}%' AND type_batiment = '{type_batiment}'"
+    req=f"SELECT AVG(prix /surface_habitable) FROM transactions WHERE date_transaction LIKE '%{year}%' AND type_batiment = '{type_batiment.value}'"
     if city != "":
         req += f" AND ville LIKE '{city}%';"
     return apply_request(req)
@@ -79,7 +79,7 @@ async def prix_moy(type_batiment : TypeBatiment, year: str, city: str=""):
          dans une ville données pour un type de batiment donnée durant l\'année 2022 en fonction du nombre de pièces')
 async def repartition(type_batiment : TypeBatiment, city: str, year: str):
     year = validate_year(year)
-    req=  f"SELECT n_pieces, count(*) FROM transactions WHERE ville LIKE '%{city}%' AND type_batiment = '{type_batiment}' AND \
+    req=  f"SELECT n_pieces, count(*) FROM transactions WHERE ville LIKE '%{city}%' AND type_batiment = '{type_batiment.value}' AND \
     date_transaction LIKE '%{year}%' GROUP BY n_pieces;"
     return apply_request(req)
 
@@ -109,7 +109,7 @@ async def total_vente_selon_parametre(type_batiment : TypeBatiment, year: str, f
     fiscal_year = validate_year(fiscal_year)
     req=f"SELECT t.ville, COUNT(t.id_transaction) AS n_total FROM transactions t\
         JOIN foyers_fiscaux ff ON t.ville = UPPER(ff.ville) \
-        WHERE t.date_transaction LIKE '{year}%' AND type_batiment = '{type_batiment}' AND ff.revenu_fiscal_moyen > {revenu_fiscal_moyen} AND ff.date LIKE '%{fiscal_year}%'\
+        WHERE t.date_transaction LIKE '{year}%' AND type_batiment = '{type_batiment.value}' AND ff.revenu_fiscal_moyen > {revenu_fiscal_moyen} AND ff.date LIKE '%{fiscal_year}%'\
         GROUP BY t.ville ORDER BY n_total DESC;"
     answer=apply_request(req)
 
@@ -142,6 +142,6 @@ async def top_prix_par_batiment(type_batiment : TypeBatiment, ascendant: bool, l
     if ascendant : order = 'ASC'
     else : order = 'DESC'
     req=f"SELECT ville, type_batiment, AVG(ROUND(prix/surface_habitable)) as prix_m2_moy FROM transactions\
-        WHERE type_batiment = '{type_batiment}' GROUP BY ville  ORDER BY prix_m2_moy {order} LIMIT {limit_top}"
+        WHERE type_batiment = '{type_batiment.value}' GROUP BY ville  ORDER BY prix_m2_moy {order} LIMIT {limit_top}"
     answer=apply_request(req)
     return answer
